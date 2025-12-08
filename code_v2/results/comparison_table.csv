@@ -1,0 +1,7 @@
+ID,Type,Method,AutoAug,Accuracy (%),Teacher Gap (%),Best Epoch,Epochs,Time (min),Early Stop,Retention (%)
+teacher,Teacher,-,N,76.65,-,199,200,389.7,N,-
+v1_baseline,Student,standard_kd,N,76.12,0.53,200,200,300.2,N,99.3
+v2_enhanced,Student,standard_kd,Y,76.19,0.46,187,200,305.7,N,99.4
+v3_dkd_beta8,Student,dkd,Y,66.85,9.80,54,84,124.9,Y,87.2
+v3_1_dkd_beta2,Student,dkd,Y,75.63,1.02,184,200,295.3,N,98.7
+v4_saturation,Student,standard_kd,Y,76.19,0.46,187,200,293.8,N,99.4

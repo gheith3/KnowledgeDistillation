@@ -1,0 +1,181 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{setspace}
+\usepackage{enumitem}
+
+% Page geometry
+\geometry{
+    left=2.5cm,
+    right=2.5cm,
+    top=2.5cm,
+    bottom=2.5cm
+}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    citecolor=blue,
+}
+
+% Header and footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Master's Thesis Proposal}
+\lhead{Gheith Alrawahi}
+\rfoot{Page \thepage}
+
+% Title formatting
+\titleformat{\section}
+  {\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+% Line spacing
+\onehalfspacing
+
+\begin{document}
+
+% Title Page
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\LARGE\bfseries Proposed Master's Thesis\par}
+   
+    \vspace{2.5cm}
+    
+    {\huge\bfseries Improving a Compact Vision Model Using Knowledge Distillation\par}
+    \vspace{3cm}
+    
+    {\Large\textbf{Student:} Gheith Alrawahi\par}
+    \vspace{0.3cm}
+    {\Large\textbf{Student ID:} 2120246006\par}
+    \vspace{0.3cm}
+    {\Large\textbf{Program:} Software Engineering\par}
+    \vspace{0.3cm}
+    {\Large\textbf{Institution:} Nankai University\par}
+    \vspace{0.3cm}
+    {\Large\textbf{Supervisor:} Prof. Jing Wang\par}
+    
+    \vfill
+    
+    {\large \the\year\par}
+\end{titlepage}
+
+% Reset page numbering
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+% Table of Contents
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+Deep learning models in computer vision achieve impressive accuracy but often require large memory and computation resources, limiting deployment in real-time or edge environments. \textbf{Knowledge Distillation (KD)} provides an effective way to compress large models by transferring knowledge from a high-capacity \textbf{Teacher Model} to a smaller \textbf{Student Model}.
+
+In this project, KD will be used to train a compact image classification model that achieves a balance between \textbf{accuracy and efficiency}. The objective is to improve the student model's performance while significantly reducing computational costs.
+
+\section{Project Objectives}
+
+The project will focus on the following achievable objectives:
+
+\begin{enumerate}[leftmargin=*]
+    \item \textbf{Baseline Establishment:} Train and evaluate both the Teacher (EfficientNetV2-L) and Student (EfficientNetV2-S) models using standard training to define baseline accuracy and resource requirements.
+    
+    \item \textbf{Knowledge Distillation Implementation:} Apply standard KD techniques (soft targets + hard labels) to effectively transfer the teacher's knowledge to the student.
+    
+    \item \textbf{Performance Analysis:} Quantitatively measure improvement in \textbf{accuracy}, \textbf{inference speed}, and \textbf{model size} between baseline training and KD training.
+    
+    \item \textbf{Result Evaluation:} Analyze the effect of KD temperature, loss weighting, and dataset complexity on the student's learning efficiency.
+\end{enumerate}
+
+\section{Methodology and Model Specifications}
+
+\subsection{Model Selection}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}p{2.5cm}p{3cm}p{2.8cm}p{3.2cm}@{}}
+\toprule
+\textbf{Role} & \textbf{Model} & \textbf{Parameters (Approx.)} & \textbf{ImageNet Top-1 Accuracy (Approx.)} \\ \midrule
+Teacher Model & EfficientNetV2-L & 120 Million & 85.7\% \\
+Student Model & EfficientNetV2-S & 22 Million & 83.9\% \\ \bottomrule
+\end{tabular}
+\caption{Teacher and Student Model Specifications}
+\label{tab:models}
+\end{table}
+
+\textbf{Framework:} \textbf{PyTorch} will be the main implementation platform.
+
+\subsection{Knowledge Distillation Setup}
+
+The total loss function will combine both teacher supervision and ground-truth learning:
+
+\begin{equation}
+L_{total} = \lambda_{KD} \cdot L_{KD} + \lambda_{CE} \cdot L_{hard}
+\end{equation}
+
+Where:
+\begin{itemize}[leftmargin=*]
+    \item $L_{KD}$: Kullback-Leibler divergence between the teacher's soft targets and the student's logits (temperature $T=4$).
+    
+    \item $L_{CE}$: Standard cross-entropy loss with hard labels.
+    
+    \item The hyperparameters $\lambda_{KD}$ and $\lambda_{CE}$ will be optimized to balance soft and hard learning.
+\end{itemize}
+
+\subsection{Evaluation Dataset and Metrics}
+
+\textbf{Dataset:} \textbf{CIFAR-100} is selected for its manageable size and established benchmarking value. If time and resources allow, a subset of \textbf{ImageNet-1K} will be used for extended evaluation.
+
+\textbf{Metrics:}
+\begin{itemize}[leftmargin=*]
+    \item \textbf{Top-1 Accuracy}
+    \item \textbf{Validation Loss}
+    \item \textbf{Inference Time}
+    \item \textbf{Model Size}
+    \item \textbf{Training Speed} (optional)
+\end{itemize}
+
+\section{Expected Outcomes}
+
+The project is expected to deliver the following outcomes:
+
+\begin{itemize}[leftmargin=*]
+    \item The student model trained through KD will achieve \textbf{higher accuracy} than its independently trained baseline.
+    
+    \item The KD approach will demonstrate \textbf{better efficiency} in inference time and resource utilization compared to the teacher model.
+    
+    \item The final model will provide a strong \textbf{accuracy--efficiency trade-off}, proving KD as a practical compression strategy for vision models.
+\end{itemize}
+
+\section{References}
+
+\begin{enumerate}[leftmargin=*]
+    \item Hinton, G., Vinyals, O., \& Dean, J. (2015). \textit{Distilling the Knowledge in a Neural Network.} arXiv:1503.02531. \url{https://arxiv.org/abs/1503.02531}
+    
+    \item Tan, M., \& Le, Q. (2021). \textit{EfficientNetV2: Smaller Models and Faster Training.} arXiv:2104.00298. \url{https://arxiv.org/abs/2104.00298}
+    
+    \item Liu, Z., Mao, H., Wu, C., Feichtenhofer, C., Darrell, T., \& Xie, S. (2022). \textit{ConvNeXt: Revisiting ConvNets in the Transformer Era.} CVPR. \url{https://arxiv.org/abs/2201.03545}
+    
+    \item Wu, H., Xiao, B., Codella, N., Liu, M., Dai, X., Yuan, L., \& Zhang, L. (2022). \textit{TinyViT: Fast Pretraining Distillation for Small Vision Transformers.} ECCV. \url{https://arxiv.org/abs/2207.10542}
+    
+    \item \textit{Keras Team.} (n.d.). \textit{Knowledge Distillation Example.} \url{https://keras.io/examples/vision/knowledge_distillation/}
+\end{enumerate}
+
+\end{document}

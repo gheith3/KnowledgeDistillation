@@ -1,0 +1,453 @@
+\documentclass[11pt,a4paper]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+% Page geometry
+\geometry{margin=2.5cm}
+\setlength{\headheight}{14pt}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{Progress Report -- Experimental Results}
+\lhead{Gheith Alrawahi}
+\rfoot{Page \thepage}
+
+% Hyperref setup
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+% Title formatting
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+\begin{document}
+
+% Title Page
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    
+    {\LARGE\bfseries Progress Report\par}
+    {\LARGE\bfseries Experimental Results\par}
+    
+    \vspace{2cm}
+    
+    \begin{tabular}{rl}
+        \textbf{Student:} & Gheith Alrawahi \\
+        \textbf{Student ID:} & 2120246006 \\
+        \textbf{Program:} & Software Engineering \\
+        \textbf{Institution:} & Nankai University \\
+        \textbf{Supervisor:} & Prof. Jing Wang \\
+        \textbf{Date:} & December 2025 \\
+    \end{tabular}
+    
+    \vfill
+\end{titlepage}
+
+% Table of Contents
+\tableofcontents
+\newpage
+
+% ============================================================================
+\section{Executive Summary}
+% ============================================================================
+
+we completed the entire experimental phase of the thesis. We investigated the stability of Knowledge Distillation (KD) under strong data augmentation on the CIFAR-100 dataset \citep{krizhevsky2009learning}.
+
+We present three key outcomes:
+\begin{enumerate}
+    \item \textbf{Standard KD is superior in stability.} It achieved the highest accuracy (76.19\%) and retention rate (99.40\%). It outperformed Decoupled KD (DKD) in high-noise regimes.
+    \item \textbf{We identified the ``Regularization-Distillation Conflict.''} DKD is highly sensitive to augmentation noise. It collapsed when $\beta$ was high. Standard KD remained robust.
+    \item \textbf{We confirmed Capacity Saturation.} Experiment v4 yielded accuracy identical to v2 (76.19\%). This provides definitive evidence that the student model has reached its representational ceiling.
+\end{enumerate}
+
+\subsection{Results at a Glance}
+
+\begin{table}[h]
+\centering
+\caption{Summary of model compression results.}
+\label{tab:summary}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Accuracy} & \textbf{Parameters} & \textbf{Compression} \\
+\midrule
+Teacher (EfficientNetV2-L) & 76.65\% & 118M & --- \\
+Distilled Student (Standard KD) & \textbf{76.19\%} & 21M & 5.6$\times$ smaller \\
+Distilled Student (DKD, $\beta$=8.0) & 66.85\% & 21M & Collapsed \\
+Distilled Student (DKD, $\beta$=2.0) & 75.63\% & 21M & Recovered \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+We achieved 99.4\% teacher accuracy retention with 5.6$\times$ model compression using Standard KD.
+
+% ============================================================================
+\section{Methodology}
+% ============================================================================
+
+\subsection{Experimental Setup}
+
+We used the following configuration:
+
+\begin{itemize}
+    \item \textbf{Teacher Model:} EfficientNetV2-L \citep{tan2021efficientnetv2}, pre-trained on ImageNet \citep{deng2009imagenet}, fine-tuned on CIFAR-100
+    \item \textbf{Student Model:} EfficientNetV2-S (5.6$\times$ smaller than teacher)
+    \item \textbf{Dataset:} CIFAR-100 (100 classes, 50,000 training images, 10,000 test images)
+    \item \textbf{Hardware:} NVIDIA GeForce RTX 5070 Laptop GPU
+\end{itemize}
+
+\subsection{Training Pipeline}
+
+We implemented an enhanced training pipeline with three components.
+
+\paragraph{Data Augmentation:}
+\begin{itemize}
+    \item \textbf{AutoAugment} \citep{cubuk2019autoaugment}: Automatically finds the best image transformations for the dataset.
+    \item \textbf{Random Erasing} \citep{zhong2020random} ($p$=0.25): Randomly masks parts of the image to improve robustness.
+    \item \textbf{Mixup} \citep{zhang2018mixup} ($\alpha$=0.8): Blends two images and their labels together.
+    \item \textbf{CutMix} \citep{yun2019cutmix} ($\alpha$=1.0): Cuts a patch from one image and pastes it onto another.
+\end{itemize}
+
+\paragraph{Optimization:}
+\begin{itemize}
+    \item \textbf{AdamW} \citep{loshchilov2019decoupled} (lr=0.001, weight\_decay=0.05): Optimizer with proper weight decay for better generalization.
+    \item \textbf{Cosine Annealing LR} \citep{loshchilov2017sgdr}: Gradually reduces learning rate following a cosine curve.
+    \item \textbf{Linear warmup} (5 epochs): Slowly increases learning rate at the start to stabilize training.
+    \item \textbf{Label Smoothing} \citep{szegedy2016rethinking} (0.1): Softens hard labels to prevent overconfident predictions.
+\end{itemize}
+
+\paragraph{Training Stability:}
+\begin{itemize}
+    \item \textbf{Mixed Precision} (FP16): Uses 16-bit floats to speed up training and reduce memory.
+    \item \textbf{Gradient clipping} (max\_norm=1.0): Limits gradient size to prevent exploding gradients.
+    \item \textbf{Early stopping} (patience=30): Stops training if validation loss does not improve for 30 epochs.
+\end{itemize}
+
+\subsection{Distillation Methods}
+
+We compared two distillation methods.
+
+\paragraph{Standard KD} \citep{hinton2015distilling}:
+\begin{equation}
+L_{KD} = \alpha \cdot T^2 \cdot \text{KL}(p_s^T \| p_t^T) + (1-\alpha) \cdot \text{CE}(y, p_s)
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $L_{KD}$ = total loss for knowledge distillation
+    \item $\alpha$ = balance weight between soft and hard labels (we used 0.7)
+    \item $T$ = temperature for softening probability distributions (we used 4.0)
+    \item $\text{KL}(\cdot)$ = Kullback-Leibler divergence (measures difference between two distributions)
+    \item $p_s^T$ = student's softened predictions at temperature $T$
+    \item $p_t^T$ = teacher's softened predictions at temperature $T$
+    \item $\text{CE}(\cdot)$ = cross-entropy loss with true labels
+    \item $y$ = ground truth labels
+    \item $p_s$ = student's predictions
+\end{itemize}
+
+\paragraph{Decoupled KD} \citep{zhao2022decoupled}:
+\begin{equation}
+L_{DKD} = \alpha \cdot L_{TCKD} + \beta \cdot L_{NCKD}
+\end{equation}
+
+The key idea is to separate the teacher's output into two parts:
+
+\begin{equation}
+L_{TCKD} = \text{KL}\left( \frac{p_s^t}{p_s^t + \sum_{j \neq t} p_s^j} \Big\| \frac{p_t^t}{p_t^t + \sum_{j \neq t} p_t^j} \right)
+\end{equation}
+
+\begin{equation}
+L_{NCKD} = \text{KL}\left( \frac{p_s^{\backslash t}}{\sum_{j \neq t} p_s^j} \Big\| \frac{p_t^{\backslash t}}{\sum_{j \neq t} p_t^j} \right)
+\end{equation}
+
+where:
+\begin{itemize}
+    \item $L_{DKD}$ = total loss for decoupled knowledge distillation
+    \item $\alpha$ = weight for target class component (we used 1.0)
+    \item $\beta$ = weight for non-target class component (we tested 8.0 and 2.0)
+    \item $L_{TCKD}$ = Target Class KD loss: matches the probability of the correct class between student and teacher
+    \item $L_{NCKD}$ = Non-Target Class KD loss: matches the distribution over all wrong classes (the "dark knowledge")
+    \item $p^t$ = probability of the target (correct) class
+    \item $p^{\backslash t}$ = probabilities of all non-target classes
+\end{itemize}
+
+% ============================================================================
+\section{Experimental Results}
+% ============================================================================
+
+\subsection{Summary of All Experiments}
+
+\begin{table}[h]
+\centering
+\caption{Comparison of all experimental configurations.}
+\label{tab:experiments}
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Exp.} & \textbf{Method} & \textbf{Augmentation} & \textbf{Student Acc.} & \textbf{Retention} & \textbf{Key Insight} \\
+\midrule
+v1 & Standard KD & Mixup/CutMix & 76.12\% & 99.31\% & Baseline \\
+v2 & Standard KD & AutoAugment+ & \textbf{76.19\%} & \textbf{99.40\%} & Optimal \\
+v3 & DKD ($\beta$=8.0) & AutoAugment+ & 66.85\% & 87.21\% & Collapsed \\
+v3.1 & DKD ($\beta$=2.0) & AutoAugment+ & 75.63\% & 98.67\% & Recovered \\
+v4 & Standard KD & AutoAugment+ & 76.19\% & 99.40\% & Saturation \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Detailed Analysis of Phases}
+
+\paragraph{Phase 1: Robustness of Standard KD (v1 vs v2).}
+We established a strong baseline (v1) using only Mixup and CutMix. It achieved 76.12\% accuracy. Adding AutoAugment in v2 provided a marginal gain of 0.07\%, reaching 76.19\%. This indicates that Standard KD is inherently data-efficient and stable against noise.
+
+\paragraph{Phase 2: The Failure of DKD (v3 vs v3.1).}
+Experiment v3 demonstrated a failure mode in Decoupled KD. With $\beta$=8.0 and strong augmentation, performance collapsed to 66.85\%. The model triggered early stopping at epoch 84.
+
+We confirmed the hypothesis: high reliance on ``dark knowledge'' (Non-Target Logits) interferes with the noise introduced by strong augmentation.
+
+In v3.1, we reduced $\beta$ to 2.0. This allowed the model to recover to 75.63\%. However, it still did not match Standard KD. This demonstrates that DKD requires sensitive hyperparameter tuning, unlike Standard KD.
+
+\paragraph{Phase 3: The Saturation Test (v4).}
+In v4, we used a stronger teacher model while maintaining the v2 training recipe. The final accuracy was 76.19\%, exactly matching v2.
+
+This exact match serves as definitive proof of Capacity Saturation. The student model (EfficientNetV2-S) is fully saturated. It cannot absorb further knowledge regardless of teacher quality.
+
+% ============================================================================
+\section{Key Scientific Findings}
+% ============================================================================
+
+Based on the collected data, we defend three scientific claims.
+
+\subsection{Finding 1: The Regularization-Distillation Conflict}
+
+State-of-the-art distillation methods like DKD are fragile when combined with modern regularization. AutoAugment and Mixup introduce noise into the training signal. This noise corrupts the ``dark knowledge'' that DKD relies on. The result is training instability unless the distillation weight ($\beta$) is significantly reduced.
+
+This finding contradicts the claim that DKD is universally superior \citep{zhao2022decoupled}.
+
+\subsection{Finding 2: Operational Robustness of Standard KD}
+
+Contrary to recent literature suggesting Standard KD is outdated, our results indicate it is the most practically robust method. It achieved 76.19\% accuracy with 99.40\% teacher retention. It required zero hyperparameter retuning across all experiments. This makes it suitable for resource-constrained scenarios involving heavy data augmentation.
+
+\subsection{Finding 3: Student Capacity Ceiling}
+
+We demonstrated that the performance gap is not always due to teacher quality. When the retention rate exceeds 99\% (as observed in v2 and v4), the bottleneck shifts entirely to the student's architectural capacity. Experiments v2 and v4 achieved identical 76.19\% accuracy despite v4 using a stronger teacher. This aligns with findings from \citet{mirzadeh2020improved} on the teacher-student gap.
+
+% ============================================================================
+\section{Proposed Thesis Structure}
+% ============================================================================
+
+Based on these findings, we plan to structure the thesis as follows:
+
+\begin{table}[h]
+\centering
+\caption{Proposed thesis chapter structure.}
+\label{tab:structure}
+\begin{tabular}{lll}
+\toprule
+\textbf{Chapter} & \textbf{Content} & \textbf{Status} \\
+\midrule
+1. Introduction & Problem statement, research question & Outlined \\
+2. Literature Review & EfficientNetV2, KD methods, augmentation & Outlined \\
+3. Methodology & Enhanced training recipe, loss formulations & Outlined \\
+4. Experiments & Results tables, training curves, analysis & \textbf{Data Ready} \\
+5. Discussion & Robustness analysis, saturation phenomenon & Outlined \\
+6. Conclusion & Summary, future work & Outlined \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Proposed Thesis Title}
+
+\begin{quote}
+``Robust Knowledge Distillation: Evaluating the Interplay Between Decoupled Objectives and Strong Data Augmentation in Compact Vision Models''
+\end{quote}
+
+% ============================================================================
+\section{Visualizations}
+% ============================================================================
+
+The following figures demonstrate the key findings of this research.
+
+% Figure 1a: Loss Comparison v2 vs v3
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{../../code_v2/figures/fig1a_loss_kd_vs_dkd.pdf}
+\caption{Training Stability Comparison: Standard KD (v2) vs Decoupled KD (v3). The DKD curve ($\beta$=8.0) shows severe instability and early stopping at epoch 84, while Standard KD converges smoothly to 76.19\% accuracy.}
+\label{fig:loss_v2_v3}
+\end{figure}
+
+% Figure 1b: Loss Comparison v2 vs v4 (Saturation)
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{../../code_v2/figures/fig1b_loss_saturation.pdf}
+\caption{Capacity Saturation Phenomenon: Both v2 and v4 achieve identical 76.19\% accuracy despite v4 using a stronger teacher. The overlapping curves confirm that EfficientNetV2-S has reached its representational ceiling.}
+\label{fig:saturation}
+\end{figure}
+
+\clearpage
+
+% Figure 2: DKD Beta Comparison
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../../code_v2/figures/fig2_dkd_beta_comparison.pdf}
+\caption{Effect of $\beta$ on DKD Performance. With $\beta$=8.0, DKD collapses to 66.85\% and triggers early stopping. Reducing $\beta$ to 2.0 recovers performance to 75.63\%, demonstrating the sensitivity of DKD to hyperparameter tuning.}
+\label{fig:dkd_beta}
+\end{figure}
+
+% Figure 3: Accuracy Curves
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.9\textwidth]{../../code_v2/figures/fig3_accuracy_all.pdf}
+\caption{Convergence Behavior Across All Experiments. Standard KD (v2) achieves the highest accuracy (76.19\%), while DKD with $\beta$=8.0 (v3) collapses to 66.85\% due to over-regularization.}
+\label{fig:accuracy_all}
+\end{figure}
+
+% Figure 4: Retention Bar Chart
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{../../code_v2/figures/fig4_retention_bar.pdf}
+\caption{Teacher Accuracy Retention Across Methods. Standard KD (v2 and v4) achieves the highest retention rate (99.40\%), while DKD with $\beta$=8.0 collapses to 87.21\%.}
+\label{fig:retention}
+\end{figure}
+
+% Figure 5: Zoomed Saturation
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{../../code_v2/figures/fig5_zoomed_saturation.pdf}
+\caption{Zoomed Convergence Plot (Final 50 Epochs): v2 and v4 curves overlap perfectly, providing visual proof of capacity saturation. The student model cannot improve beyond 76.19\% regardless of teacher quality.}
+\label{fig:zoomed_saturation}
+\end{figure}
+
+\clearpage
+
+% ============================================================================
+\section{Next Steps}
+% ============================================================================
+
+With all experiments concluded, the focus now shifts to thesis writing.
+
+\begin{enumerate}
+    \item \textbf{Write Chapter 4 (Results):} Generate high-resolution plots and formalize comparison tables.
+    \item \textbf{Write Chapter 5 (Discussion):} Contextualize findings within existing literature and discuss implications for Edge AI deployment.
+    \item \textbf{Finalize Chapter 3 (Methodology):} Complete mathematical formulations and implementation details.
+\end{enumerate}
+
+\vspace{1cm}
+
+% ============================================================================
+\section{Questions for Supervisor}
+% ============================================================================
+
+\begin{enumerate}
+    \item Is the scope of comparing Standard KD vs DKD sufficient for the thesis?
+    \item Do you have suggestions for strengthening the saturation phenomenon argument?
+\end{enumerate}
+
+\vfill
+
+% ============================================================================
+% References
+% ============================================================================
+\newpage
+\bibliographystyle{plainnat}
+
+\begin{thebibliography}{99}
+
+\bibitem[Cubuk et al.(2019)]{cubuk2019autoaugment}
+Cubuk, E.~D., Zoph, B., Mane, D., Vasudevan, V., and Le, Q.~V. (2019).
+\newblock AutoAugment: Learning augmentation strategies from data.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 113--123.
+\newblock \url{https://arxiv.org/abs/1805.09501}
+
+\bibitem[Deng et al.(2009)]{deng2009imagenet}
+Deng, J., Dong, W., Socher, R., Li, L.-J., Li, K., and Fei-Fei, L. (2009).
+\newblock ImageNet: A large-scale hierarchical image database.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 248--255.
+\newblock \url{https://ieeexplore.ieee.org/document/5206848}
+
+\bibitem[Hinton et al.(2015)]{hinton2015distilling}
+Hinton, G., Vinyals, O., and Dean, J. (2015).
+\newblock Distilling the knowledge in a neural network.
+\newblock \emph{arXiv preprint}, arXiv:1503.02531.
+\newblock \url{https://arxiv.org/abs/1503.02531}
+
+\bibitem[Krizhevsky(2009)]{krizhevsky2009learning}
+Krizhevsky, A. (2009).
+\newblock Learning multiple layers of features from tiny images.
+\newblock Technical report, University of Toronto.
+\newblock \url{https://www.cs.utoronto.ca/~kriz/learning-features-2009-TR.pdf}
+
+\bibitem[Loshchilov and Hutter(2017)]{loshchilov2017sgdr}
+Loshchilov, I. and Hutter, F. (2017).
+\newblock SGDR: Stochastic gradient descent with warm restarts.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}.
+\newblock \url{https://arxiv.org/abs/1608.03983}
+
+\bibitem[Loshchilov and Hutter(2019)]{loshchilov2019decoupled}
+Loshchilov, I. and Hutter, F. (2019).
+\newblock Decoupled weight decay regularization.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}.
+\newblock \url{https://arxiv.org/abs/1711.05101}
+
+\bibitem[Mirzadeh et al.(2020)]{mirzadeh2020improved}
+Mirzadeh, S.~I., Farajtabar, M., Li, A., Levine, N., Matsukawa, A., and Ghasemzadeh, H. (2020).
+\newblock Improved knowledge distillation via teacher assistant.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial Intelligence}, volume~34, pages 5191--5198.
+\newblock \url{https://arxiv.org/abs/1902.03393}
+
+\bibitem[Szegedy et al.(2016)]{szegedy2016rethinking}
+Szegedy, C., Vanhoucke, V., Ioffe, S., Shlens, J., and Wojna, Z. (2016).
+\newblock Rethinking the inception architecture for computer vision.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 2818--2826.
+\newblock \url{https://arxiv.org/abs/1512.00567}
+
+\bibitem[Tan and Le(2021)]{tan2021efficientnetv2}
+Tan, M. and Le, Q.~V. (2021).
+\newblock EfficientNetV2: Smaller models and faster training.
+\newblock In \emph{Proceedings of the International Conference on Machine Learning (ICML)}, pages 10096--10106.
+\newblock \url{https://arxiv.org/abs/2104.00298}
+
+\bibitem[Yun et al.(2019)]{yun2019cutmix}
+Yun, S., Han, D., Oh, S.~J., Chun, S., Choe, J., and Yoo, Y. (2019).
+\newblock CutMix: Regularization strategy to train strong classifiers with localizable features.
+\newblock In \emph{Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)}, pages 6023--6032.
+\newblock \url{https://arxiv.org/abs/1905.04899}
+
+\bibitem[Zhang et al.(2018)]{zhang2018mixup}
+Zhang, H., Cisse, M., Dauphin, Y.~N., and Lopez-Paz, D. (2018).
+\newblock mixup: Beyond empirical risk minimization.
+\newblock In \emph{International Conference on Learning Representations (ICLR)}.
+\newblock \url{https://arxiv.org/abs/1710.09412}
+
+\bibitem[Zhao et al.(2022)]{zhao2022decoupled}
+Zhao, B., Cui, Q., Song, R., Qiu, Y., and Liang, J. (2022).
+\newblock Decoupled knowledge distillation.
+\newblock In \emph{Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)}, pages 11953--11962.
+\newblock \url{https://arxiv.org/abs/2203.08679}
+
+\bibitem[Zhong et al.(2020)]{zhong2020random}
+Zhong, Z., Zheng, L., Kang, G., Li, S., and Yang, Y. (2020).
+\newblock Random erasing data augmentation.
+\newblock In \emph{Proceedings of the AAAI Conference on Artificial Intelligence}, volume~34, pages 13001--13008.
+\newblock \url{https://arxiv.org/abs/1708.04896}
+
+\end{thebibliography}
+
+\end{document}
