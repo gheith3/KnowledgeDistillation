@@ -296,6 +296,137 @@ def kd_loss_with_mixup(
 
 
 # =============================================================================
+# Cross-Resolution Distillation Training
+# =============================================================================
+def train_distill(
+    teacher: nn.Module,
+    student: nn.Module,
+    loader: DataLoader,
+    optimizer: torch.optim.Optimizer,
+    epoch: int,
+    device: str = "cuda",
+    temp: float = 4.0,
+    alpha: float = 0.7,
+    teacher_resize: int = None,
+    method: str = "standard_kd",
+    dkd_alpha: float = 1.0,
+    dkd_beta: float = 8.0,
+    label_smoothing: float = 0.0,
+    aug_config = None
+) -> Dict[str, float]:
+    """
+    Knowledge Distillation training with optional cross-resolution support.
+    
+    This function allows the teacher to receive upscaled images while the student
+    receives the original resolution images. This is useful for the v4 Saturation Test
+    where the teacher is trained on 64x64 but the student operates on 32x32.
+    
+    Args:
+        teacher: Teacher model (frozen during distillation)
+        student: Student model (being trained)
+        loader: DataLoader providing (images, labels) - images at student resolution
+        optimizer: Optimizer for student model
+        epoch: Current epoch number
+        device: Device to run on
+        temp: Temperature for distillation
+        alpha: Weight for soft loss in standard KD (1-alpha for hard loss)
+        teacher_resize: If specified, upscale inputs to this resolution for teacher.
+                       Use config.TEACHER_RES_V4 (64) for v4 experiment.
+        method: Distillation method - "standard_kd" or "dkd"
+        dkd_alpha: Alpha for DKD (TCKD weight)
+        dkd_beta: Beta for DKD (NCKD weight)
+        label_smoothing: Label smoothing for hard loss
+        aug_config: Augmentation config for Mixup/CutMix (optional)
+    
+    Returns:
+        Dict with training metrics (loss, accuracy)
+    """
+    teacher.eval()
+    student.train()
+    
+    running_loss = 0.0
+    correct = 0
+    total = 0
+    
+    for batch_idx, (inputs, labels) in enumerate(loader):
+        inputs, labels = inputs.to(device), labels.to(device)
+        
+        # Apply Mixup/CutMix if configured
+        use_mixup = aug_config is not None and aug_config.mixup and np.random.rand() < 0.5
+        use_cutmix = aug_config is not None and aug_config.cutmix and np.random.rand() < 0.5 and not use_mixup
+        
+        if use_mixup:
+            inputs, labels_a, labels_b, lam = mixup_data(inputs, labels, aug_config.mixup_alpha, device)
+        elif use_cutmix:
+            inputs, labels_a, labels_b, lam = cutmix_data(inputs, labels, aug_config.cutmix_alpha, device)
+        else:
+            labels_a, labels_b, lam = labels, labels, 1.0
+        
+        # Prepare inputs for the teacher (cross-resolution distillation)
+        if teacher_resize is not None:
+            # Upsample inputs for the teacher only
+            teacher_inputs = F.interpolate(
+                inputs, 
+                size=(teacher_resize, teacher_resize), 
+                mode='bilinear', 
+                align_corners=False
+            )
+        else:
+            teacher_inputs = inputs
+        
+        # Teacher forward pass (no gradients)
+        with torch.no_grad():
+            teacher_logits = teacher(teacher_inputs)
+        
+        # Student forward pass (with gradients)
+        student_logits = student(inputs)
+        
+        # Calculate loss
+        if use_mixup or use_cutmix:
+            loss = kd_loss_with_mixup(
+                student_logits, teacher_logits, labels_a, labels_b, lam,
+                method=method, temperature=temp, alpha=alpha,
+                dkd_alpha=dkd_alpha, dkd_beta=dkd_beta, label_smoothing=label_smoothing
+            )
+        else:
+            if method == "standard_kd":
+                loss = standard_kd_loss(
+                    student_logits, teacher_logits, labels,
+                    temperature=temp, alpha=alpha, label_smoothing=label_smoothing
+                )
+            elif method == "dkd":
+                dkd = dkd_loss(student_logits, teacher_logits, labels, dkd_alpha, dkd_beta, temp)
+                hard = F.cross_entropy(student_logits, labels, label_smoothing=label_smoothing)
+                loss = dkd + 0.1 * hard
+            else:
+                raise ValueError(f"Unknown method: {method}")
+        
+        # Backward pass
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        # Update metrics
+        running_loss += loss.item()
+        _, predicted = torch.max(student_logits.data, 1)
+        total += labels.size(0)
+        if use_mixup or use_cutmix:
+            correct += (lam * (predicted == labels_a).sum().item() + 
+                       (1 - lam) * (predicted == labels_b).sum().item())
+        else:
+            correct += (predicted == labels).sum().item()
+    
+    avg_loss = running_loss / len(loader)
+    accuracy = 100.0 * correct / total
+    
+    return {
+        "loss": avg_loss,
+        "accuracy": accuracy,
+        "epoch": epoch
+    }
+
+
+# =============================================================================
 # Evaluation
 # =============================================================================
 @torch.no_grad()

@@ -15,6 +15,12 @@ import json
 import torch
 
 # =============================================================================
+# V4 Super Teacher Configuration
+# =============================================================================
+TEACHER_RES_V4 = 64        # The new resolution for the v4 Teacher
+BATCH_SIZE_V4 = 64         # Reduced batch size for v4 (use if you get Out of Memory errors)
+
+# =============================================================================
 # Directory Configuration
 # =============================================================================
 PROJECT_ROOT = Path(__file__).parent

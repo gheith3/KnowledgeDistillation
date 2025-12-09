@@ -22,14 +22,27 @@ CIFAR100_MEAN = (0.5071, 0.4867, 0.4408)
 CIFAR100_STD = (0.2675, 0.2565, 0.2761)
 
 
-def get_train_transform(aug_config: AugmentationConfig) -> transforms.Compose:
-    """Build training transform based on augmentation config."""
+def get_train_transform(aug_config: AugmentationConfig, resize_to: int = None) -> transforms.Compose:
+    """Build training transform based on augmentation config.
+    
+    Args:
+        aug_config: Augmentation configuration
+        resize_to: Target resolution (e.g., 64 for v4 teacher). If None, uses native 32x32.
+    """
     transform_list = []
+    
+    # Resize if specified (for high-res teacher training)
+    if resize_to is not None:
+        transform_list.append(transforms.Resize((resize_to, resize_to)))
+    
+    # Determine crop size and padding based on resolution
+    crop_size = resize_to if resize_to is not None else 32
+    padding = resize_to // 8 if resize_to is not None else aug_config.random_crop_padding
     
     # Basic augmentation
     if aug_config.random_crop:
         transform_list.append(
-            transforms.RandomCrop(32, padding=aug_config.random_crop_padding)
+            transforms.RandomCrop(crop_size, padding=padding)
         )
     
     if aug_config.random_horizontal_flip:
@@ -55,19 +68,32 @@ def get_train_transform(aug_config: AugmentationConfig) -> transforms.Compose:
     return transforms.Compose(transform_list)
 
 
-def get_test_transform() -> transforms.Compose:
-    """Build test transform (no augmentation)."""
-    return transforms.Compose([
+def get_test_transform(resize_to: int = None) -> transforms.Compose:
+    """Build test transform (no augmentation).
+    
+    Args:
+        resize_to: Target resolution (e.g., 64 for v4 teacher). If None, uses native 32x32.
+    """
+    transform_list = []
+    
+    # Resize if specified (for high-res teacher evaluation)
+    if resize_to is not None:
+        transform_list.append(transforms.Resize((resize_to, resize_to)))
+    
+    transform_list.extend([
         transforms.ToTensor(),
         transforms.Normalize(CIFAR100_MEAN, CIFAR100_STD)
     ])
+    
+    return transforms.Compose(transform_list)
 
 
 def get_dataloaders(
     aug_config: AugmentationConfig,
     batch_size: int = 128,
     num_workers: int = 4,
-    pin_memory: bool = True
+    pin_memory: bool = True,
+    resize_to: int = None
 ) -> Tuple[DataLoader, DataLoader]:
     """
     Get CIFAR-100 train and test dataloaders.
@@ -77,13 +103,14 @@ def get_dataloaders(
         batch_size: Batch size
         num_workers: Number of data loading workers
         pin_memory: Pin memory for faster GPU transfer
+        resize_to: Target resolution (e.g., 64 for v4 teacher). If None, uses native 32x32.
     
     Returns:
         Tuple of (train_loader, test_loader)
     """
     # Build transforms
-    train_transform = get_train_transform(aug_config)
-    test_transform = get_test_transform()
+    train_transform = get_train_transform(aug_config, resize_to=resize_to)
+    test_transform = get_test_transform(resize_to=resize_to)
     
     # Load datasets
     train_dataset = torchvision.datasets.CIFAR100(
@@ -122,6 +149,7 @@ def get_dataloaders(
     print(f"  Training samples: {len(train_dataset)}")
     print(f"  Test samples: {len(test_dataset)}")
     print(f"  Batch size: {batch_size}")
+    print(f"  Resolution: {resize_to if resize_to else 32}x{resize_to if resize_to else 32}")
     print(f"  Augmentation: AutoAugment={aug_config.auto_augment}, "
           f"RandomErasing={aug_config.random_erasing}, "
           f"Mixup={aug_config.mixup}, CutMix={aug_config.cutmix}")

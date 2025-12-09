@@ -34,3 +34,7 @@ Thumbs.db
 .cursor/*
 local/*
 sections/*
+
+# Data folders
+data/
+datasets/
