@@ -229,6 +229,14 @@ In v4, we used a stronger teacher model while maintaining the v2 training recipe
 
 This exact match serves as definitive proof of Capacity Saturation. The student model (EfficientNetV2-S) is fully saturated. It cannot absorb further knowledge regardless of teacher quality.
 
+\subsection{Analysis of Teacher Performance (Resolution Mismatch Constraint)}
+
+We observed that the Teacher model (EfficientNetV2-L) achieved a top-1 accuracy of 76.65\%. This is lower than the $>$90\% typically reported for this architecture in literature. We attribute this gap to a resolution mismatch.
+
+EfficientNetV2-L is architecturally optimized for high-resolution inputs (up to $480 \times 480$). Our experiments utilized the native CIFAR-100 resolution ($32 \times 32$) without upscaling. The massive downsampling layers in V2-L rapidly reduce the $32 \times 32$ input to trivial dimensions. This limits the model's ability to leverage its full parameter capacity.
+
+We maintained this low-resolution regime to strictly simulate a resource-constrained edge computing environment. Upscaling images to $224 \times 224$ would increase computational cost (FLOPs) by approximately 50$\times$. This would violate the constraints of compact vision applications.
+
 % ============================================================================
 \section{Key Scientific Findings}
 % ============================================================================
@@ -288,7 +296,7 @@ The following figures demonstrate the key findings of this research.
 % Figure 1a: Loss Comparison v2 vs v3
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{../../code_v2/figures/fig1a_loss_kd_vs_dkd.pdf}
+\includegraphics[width=0.85\textwidth]{../../code_v2_32/figures/fig1a_loss_kd_vs_dkd.pdf}
 \caption{Training Stability Comparison: Standard KD (v2) vs Decoupled KD (v3). The DKD curve ($\beta$=8.0) shows severe instability and early stopping at epoch 84, while Standard KD converges smoothly to 76.19\% accuracy.}
 \label{fig:loss_v2_v3}
 \end{figure}
@@ -296,7 +304,7 @@ The following figures demonstrate the key findings of this research.
 % Figure 1b: Loss Comparison v2 vs v4 (Saturation)
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{../../code_v2/figures/fig1b_loss_saturation.pdf}
+\includegraphics[width=0.85\textwidth]{../../code_v2_32/figures/fig1b_loss_saturation.pdf}
 \caption{Capacity Saturation Phenomenon: Both v2 and v4 achieve identical 76.19\% accuracy despite v4 using a stronger teacher. The overlapping curves confirm that EfficientNetV2-S has reached its representational ceiling.}
 \label{fig:saturation}
 \end{figure}
@@ -306,7 +314,7 @@ The following figures demonstrate the key findings of this research.
 % Figure 2: DKD Beta Comparison
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.9\textwidth]{../../code_v2/figures/fig2_dkd_beta_comparison.pdf}
+\includegraphics[width=0.9\textwidth]{../../code_v2_32/figures/fig2_dkd_beta_comparison.pdf}
 \caption{Effect of $\beta$ on DKD Performance. With $\beta$=8.0, DKD collapses to 66.85\% and triggers early stopping. Reducing $\beta$ to 2.0 recovers performance to 75.63\%, demonstrating the sensitivity of DKD to hyperparameter tuning.}
 \label{fig:dkd_beta}
 \end{figure}
@@ -314,7 +322,7 @@ The following figures demonstrate the key findings of this research.
 % Figure 3: Accuracy Curves
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.9\textwidth]{../../code_v2/figures/fig3_accuracy_all.pdf}
+\includegraphics[width=0.9\textwidth]{../../code_v2_32/figures/fig3_accuracy_all.pdf}
 \caption{Convergence Behavior Across All Experiments. Standard KD (v2) achieves the highest accuracy (76.19\%), while DKD with $\beta$=8.0 (v3) collapses to 66.85\% due to over-regularization.}
 \label{fig:accuracy_all}
 \end{figure}
@@ -322,7 +330,7 @@ The following figures demonstrate the key findings of this research.
 % Figure 4: Retention Bar Chart
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.8\textwidth]{../../code_v2/figures/fig4_retention_bar.pdf}
+\includegraphics[width=0.8\textwidth]{../../code_v2_32/figures/fig4_retention_bar.pdf}
 \caption{Teacher Accuracy Retention Across Methods. Standard KD (v2 and v4) achieves the highest retention rate (99.40\%), while DKD with $\beta$=8.0 collapses to 87.21\%.}
 \label{fig:retention}
 \end{figure}
@@ -330,7 +338,7 @@ The following figures demonstrate the key findings of this research.
 % Figure 5: Zoomed Saturation
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.85\textwidth]{../../code_v2/figures/fig5_zoomed_saturation.pdf}
+\includegraphics[width=0.85\textwidth]{../../code_v2_32/figures/fig5_zoomed_saturation.pdf}
 \caption{Zoomed Convergence Plot (Final 50 Epochs): v2 and v4 curves overlap perfectly, providing visual proof of capacity saturation. The student model cannot improve beyond 76.19\% regardless of teacher quality.}
 \label{fig:zoomed_saturation}
 \end{figure}
@@ -352,13 +360,14 @@ With all experiments concluded, the focus now shifts to thesis writing.
 \vspace{1cm}
 
 % ============================================================================
-\section{Questions for Supervisor}
+\section{Critical Question Regarding Teacher Resolution}
 % ============================================================================
 
-\begin{enumerate}
-    \item Is the scope of comparing Standard KD vs DKD sufficient for the thesis?
-    \item Do you have suggestions for strengthening the saturation phenomenon argument?
-\end{enumerate}
+The Teacher model (EfficientNetV2-L) achieved 76.65\% accuracy due to training on the native $32 \times 32$ resolution. We designed this setup to simulate a low-compute edge scenario. While this provides a strong relative baseline for the Student, literature suggests this model could exceed 90\% if inputs were upscaled to $224 \times 224$.
+
+\textbf{My Question:} Do you accept the current results as a valid study of ``Knowledge Distillation in Low-Resolution/Resource-Constrained Regimes'' (where we intentionally avoid upscaling to save FLOPs)? Or do you require me to re-run all experiments (v1--v4) using upscaled $224 \times 224$ inputs to maximize Teacher performance?
+
+\textit{Note: Re-running with $224 \times 224$ will significantly increase training time and FLOPs. This may exceed standard ``compact model'' constraints.}
 
 \vfill
 
