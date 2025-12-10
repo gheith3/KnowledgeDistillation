@@ -18,10 +18,17 @@
 \contentsline {subsection}{\numberline {3.3}Analysis of Teacher Performance (Resolution Impact)}{5}{subsection.3.3}%
 \contentsline {section}{\numberline {4}Key Scientific Findings}{5}{section.4}%
 \contentsline {subsection}{\numberline {4.1}Finding 1: The Regularization-Distillation Conflict}{5}{subsection.4.1}%
-\contentsline {subsection}{\numberline {4.2}Finding 2: Operational Robustness of Standard KD}{5}{subsection.4.2}%
+\contentsline {paragraph}{Mechanism of Failure.}{6}{subsection.4.1}%
+\contentsline {paragraph}{Comparison with Literature.}{6}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Finding 2: Operational Robustness of Standard KD}{6}{subsection.4.2}%
 \contentsline {subsection}{\numberline {4.3}Finding 3: Performance Gains Through Cross-Resolution Distillation}{6}{subsection.4.3}%
-\contentsline {section}{\numberline {5}Proposed Thesis Structure}{6}{section.5}%
-\contentsline {subsection}{\numberline {5.1}Proposed Thesis Title}{6}{subsection.5.1}%
-\contentsline {section}{\numberline {6}Visualizations}{6}{section.6}%
-\contentsline {section}{\numberline {7}Next Steps}{10}{section.7}%
-\contentsline {section}{\numberline {8}Summary and Conclusion}{10}{section.8}%
+\contentsline {paragraph}{Why Cross-Resolution Works.}{6}{subsection.4.3}%
+\contentsline {paragraph}{Implication for Green AI.}{6}{subsection.4.3}%
+\contentsline {paragraph}{Comparison with Literature.}{7}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Limitations of This Study}{7}{subsection.4.4}%
+\contentsline {section}{\numberline {5}Proposed Thesis Structure}{7}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Proposed Thesis Title}{7}{subsection.5.1}%
+\contentsline {section}{\numberline {6}Visualizations}{7}{section.6}%
+\contentsline {section}{\numberline {7}Next Steps}{11}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Recommended Future Work}{11}{subsection.7.1}%
+\contentsline {section}{\numberline {8}Summary and Conclusion}{11}{section.8}%

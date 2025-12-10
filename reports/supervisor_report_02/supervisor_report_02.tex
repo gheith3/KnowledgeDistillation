@@ -57,6 +57,7 @@
         \textbf{Institution:} & Nankai University \\
         \textbf{Supervisor:} & Prof. Jing Wang \\
         \textbf{Date:} & December 2025 \\
+        \textbf{Code:} & \url{https://github.com/gheith3/KnowledgeDistillation} \\
     \end{tabular}
     
     \vfill
@@ -222,12 +223,16 @@ We established a strong baseline (v1) using only Mixup and CutMix. It achieved 7
 \paragraph{Phase 2: The Failure of DKD (v3 vs v3.1).}
 Experiment v3 demonstrated a failure mode in Decoupled KD. With $\beta$=8.0 and strong augmentation, performance collapsed to 66.85\%. The model triggered early stopping at epoch 84.
 
+\textbf{Why $\beta$=8.0?} We chose this value because \citet{zhao2022decoupled} reported it as optimal in their original experiments. Our goal was to test whether their recommended setting generalizes to high-noise regimes.
+
 We confirmed the hypothesis: high reliance on ``dark knowledge'' (Non-Target Logits) interferes with the noise introduced by strong augmentation.
 
 In v3.1, we reduced $\beta$ to 2.0. This allowed the model to recover to 75.63\%. However, it still did not match Standard KD. This demonstrates that DKD requires sensitive hyperparameter tuning, unlike Standard KD.
 
 \paragraph{Phase 3: Cross-Resolution Distillation Test (v4).}
 We addressed the sub-optimal Teacher performance (76.65\% at $32 \times 32$) by training a Teacher on $64 \times 64$ inputs. This Teacher achieved 84.39\% accuracy. We then performed Cross-Resolution Distillation: the Student was kept at the low-compute $32 \times 32$ resolution during distillation.
+
+\textbf{Why $64\times64$?} We chose this resolution because it doubles the spatial dimensions while remaining computationally feasible on our hardware. It also aligns with the minimum input size recommended for EfficientNetV2 architectures.
 
 \textbf{Result:} The Student accuracy increased from the former ceiling of 76.19\% to \textbf{77.93\%} (a gain of 1.74\%). This confirms that Standard KD can transfer complex features across different input resolutions. The Student runs at low $32 \times 32$ cost but achieves $64 \times 64$-level performance.
 
@@ -251,7 +256,13 @@ Based on the collected data, we defend three scientific claims.
 
 State-of-the-art distillation methods like DKD are fragile when combined with modern regularization. AutoAugment and Mixup introduce noise into the training signal. This noise corrupts the ``dark knowledge'' that DKD relies on. The result is training instability unless the distillation weight ($\beta$) is significantly reduced.
 
-This finding contradicts the claim that DKD is universally superior \citep{zhao2022decoupled}.
+\paragraph{Mechanism of Failure.}
+We explain why DKD collapses under strong augmentation. Consider a Mixup image: $0.8 \times \text{Image}_A + 0.2 \times \text{Image}_B$. The Teacher's logits become a linear superposition of two classes. The structured relationship between semantically similar classes (the ``dark knowledge'') is now contaminated. DKD with high $\beta$ forces the Student to learn this noisy non-target distribution via $L_{NCKD}$. The gradient signals from $L_{NCKD}$ conflict with the gradient signals from the ground truth labels. This causes training divergence.
+
+This finding contradicts the claim that DKD is universally superior \citep{zhao2022decoupled}. We define the boundary conditions of their method: DKD is sensitive to the signal-to-noise ratio of the input data.
+
+\paragraph{Comparison with Literature.}
+Our results align with \citet{hinton2015distilling}, who showed that soft labels provide robust supervision. However, our findings contradict \citet{zhao2022decoupled}, who reported DKD as universally superior. The key difference is the augmentation regime: Zhao et al.\ used light augmentation (random crop and flip), while we used heavy augmentation (AutoAugment, Mixup, CutMix). This suggests that DKD's superiority is conditional on low-noise training environments.
 
 \subsection{Finding 2: Operational Robustness of Standard KD}
 
@@ -261,7 +272,32 @@ Contrary to recent literature suggesting Standard KD is outdated, our results in
 
 We demonstrated that Student performance is limited by the Teacher's feature quality. By increasing the Teacher's input resolution to $64 \times 64$, the Student gained an additional 1.74\% accuracy, reaching 77.93\%. The Teacher improved by 7.74\% (from 76.65\% to 84.39\%), while the Student improved by 1.74\%. This yields a Knowledge Transfer Efficiency of 22.5\%.
 
-Crucially, this high performance was achieved while the Student model continued to process data at the low $32 \times 32$ resolution. This confirms that Standard KD can effectively inject high-resolution knowledge into low-resolution, cost-effective compact models.
+\paragraph{Why Cross-Resolution Works.}
+Upscaling a $32\times32$ image to $64\times64$ does not add new information in the information-theoretic sense. However, it changes the receptive field dynamics of the CNN. EfficientNetV2-L is pre-trained on ImageNet ($224\times224$). It is designed to detect features at specific spatial scales. Feeding it a $32\times32$ image causes feature maps to degrade to $1\times1$ too early in the network. By upscaling to $64\times64$, we delay this spatial collapse. The Teacher can utilize its deeper layers more effectively. Intuitively, this is akin to a student with poor eyesight (low-resolution) listening to a teacher describing a detailed painting (high-resolution). The student learns ``what'' is in the image better than if they only looked at a blurry version themselves.
+
+Crucially, this high performance was achieved while the Student model continued to process data at the low $32 \times 32$ resolution. This proves that Standard KD can effectively inject high-resolution knowledge into low-resolution, cost-effective compact models. This ability to decouple training resolution from inference resolution is a key contribution for efficient model deployment.
+
+\paragraph{Implication for Green AI.}
+The Cross-Resolution method aligns with the goals of Green AI and Edge Computing:
+\begin{itemize}
+    \item \textbf{Training Cost:} Increased slightly (Teacher processes $64\times64$).
+    \item \textbf{Inference Cost:} Unchanged (Student remains $32\times32$).
+    \item \textbf{Performance:} Improved by 1.74\%.
+\end{itemize}
+This decoupling allows deployment of higher-performance models on edge devices without upgrading hardware or increasing power consumption.
+
+\paragraph{Comparison with Literature.}
+Cross-resolution distillation is underexplored in the literature. Most KD papers assume matched resolutions between Teacher and Student \citep{gou2021knowledge}. \citet{mirzadeh2020improved} introduced Teacher Assistants to bridge capacity gaps, but they did not explore resolution gaps. Our approach aligns with the findings of \citet{touvron2019fixing}, who demonstrated that decoupling training and inference resolutions can unlock latent model capacity. Our work extends this insight to the Teacher-Student paradigm, showing that resolution mismatch can be beneficial when the Teacher operates at higher resolution.
+
+\subsection{Limitations of This Study}
+
+We acknowledge the following limitations:
+
+\begin{enumerate}
+    \item \textbf{Single Architecture:} We used only EfficientNetV2 (L and S variants). The findings may differ for other architectures such as ResNet or Vision Transformers.
+    \item \textbf{Single Dataset:} We evaluated on CIFAR-100 only. Generalization to larger datasets (e.g., ImageNet) requires further validation.
+    \item \textbf{Limited Resolution Range:} We tested Cross-Resolution only between $32\times32$ and $64\times64$. Larger gaps (e.g., $128\times128 \to 32\times32$) remain unexplored.
+\end{enumerate}
 
 % ============================================================================
 \section{Proposed Thesis Structure}
@@ -281,7 +317,7 @@ Based on these findings, we plan to structure the thesis as follows:
 2. Literature Review & EfficientNetV2, KD methods, augmentation & Outlined \\
 3. Methodology & Enhanced training recipe, loss formulations & Outlined \\
 4. Experiments & Results tables, training curves, analysis & \textbf{Data Ready} \\
-5. Discussion & Robustness analysis, saturation phenomenon & Outlined \\
+5. Discussion & The Regularization-Distillation Conflict: Theory and limits & Outlined \\
 6. Conclusion & Summary, future work & Outlined \\
 \bottomrule
 \end{tabular}
@@ -309,15 +345,19 @@ The following figures demonstrate the key findings of this research.
 \label{fig:loss_v2_v3}
 \end{figure}
 
+\textbf{Interpretation:} Figure~\ref{fig:loss_v2_v3} shows that DKD (v3) exhibits erratic loss behavior after epoch 50. The loss curve diverges, triggering early stopping at epoch 84. In contrast, Standard KD (v2) maintains stable convergence throughout training. This confirms the Regularization-Distillation Conflict.
+
 \vspace{-1em}
 % Figure 1b: Loss Comparison v2 vs v4 (Cross-Resolution)
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.75\textwidth]{../../code_v2_32/figures/fig1b_loss_saturation.pdf}
+\includegraphics[width=0.75\textwidth]{../../code_v2_32/figures/fig1b_cross_resolution.pdf}
 \vspace{-1em}
 \caption{Cross-Resolution Analysis: v4 (64$\times$64 Teacher) achieves 77.93\% vs v2 (32$\times$32 Teacher) at 76.19\%.}
-\label{fig:saturation}
+\label{fig:cross_res}
 \end{figure}
+
+\textbf{Interpretation:} Figure~\ref{fig:cross_res} demonstrates that v4 (Cross-Resolution) achieves a higher final accuracy than v2. Both curves show stable convergence, but v4 benefits from the stronger $64\times64$ Teacher. This proves that the Student's performance ceiling is determined by Teacher quality, not Student capacity.
 
 \vspace{-1em}
 % Figure 1c: Teacher Comparison
@@ -338,6 +378,8 @@ The following figures demonstrate the key findings of this research.
 \caption{DKD $\beta$ Effect: $\beta$=8.0 collapses to 66.85\%, $\beta$=2.0 recovers to 75.63\%.}
 \label{fig:dkd_beta}
 \end{figure}
+
+\textbf{Interpretation:} Figure~\ref{fig:dkd_beta} shows the effect of reducing $\beta$ from 8.0 to 2.0. The lower $\beta$ reduces reliance on noisy non-target logits, allowing partial recovery. However, even the tuned DKD ($\beta$=2.0) underperforms Standard KD by 0.56\%.
 
 \vspace{-1em}
 % Figure 3: Accuracy Curves
@@ -363,10 +405,10 @@ The following figures demonstrate the key findings of this research.
 % Figure 5: Zoomed Convergence
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.75\textwidth]{../../code_v2_32/figures/fig5_zoomed_saturation.pdf}
+\includegraphics[width=0.75\textwidth]{../../code_v2_32/figures/fig5_zoomed_convergence.pdf}
 \vspace{-1em}
 \caption{Zoomed Convergence (Final 50 Epochs): v4 (77.93\%) surpasses v2 (76.19\%) and v1 (76.12\%).}
-\label{fig:zoomed_saturation}
+\label{fig:zoomed_convergence}
 \end{figure}
 
 \vspace{-1em}
@@ -391,6 +433,15 @@ With all experiments concluded, the focus now shifts to thesis writing.
     \item \textbf{Write Chapter 4 (Results):} Generate high-resolution plots and formalize comparison tables.
     \item \textbf{Write Chapter 5 (Discussion):} Contextualize findings within existing literature and discuss implications for Edge AI deployment.
     \item \textbf{Finalize Chapter 3 (Methodology):} Complete mathematical formulations and implementation details.
+\end{enumerate}
+
+\subsection{Recommended Future Work}
+
+we identify two directions for future research:
+
+\begin{enumerate}
+    \item \textbf{Expand Cross-Resolution Study:} Test larger resolution gaps (e.g., $128\times128$ Teacher $\to$ $32\times32$ Student). We aim to find the point where the resolution gap becomes too wide for the Student to bridge.
+    \item \textbf{Mathematical Formalization:} Derive the closed-form expectation of the $L_{NCKD}$ gradient under Mixup. This would provide a mathematical proof of the variance increase that causes DKD collapse.
 \end{enumerate}
 
 \vspace{1cm}
@@ -496,6 +547,18 @@ Zhong, Z., Zheng, L., Kang, G., Li, S., and Yang, Y. (2020).
 \newblock Random erasing data augmentation.
 \newblock In \emph{Proceedings of the AAAI Conference on Artificial Intelligence}, volume~34, pages 13001--13008.
 \newblock \url{https://arxiv.org/abs/1708.04896}
+
+\bibitem[Touvron et al.(2019)]{touvron2019fixing}
+Touvron, H., Vedaldi, A., Douze, M., and J\'{e}gou, H. (2019).
+\newblock Fixing the train-test resolution discrepancy.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, pages 8252--8262.
+\newblock \url{https://arxiv.org/abs/1906.06423}
+
+\bibitem[Gou et al.(2021)]{gou2021knowledge}
+Gou, J., Yu, B., Maybank, S.~J., and Tao, D. (2021).
+\newblock Knowledge distillation: A survey.
+\newblock \emph{International Journal of Computer Vision}, 129(6):1789--1819.
+\newblock \url{https://arxiv.org/abs/2006.05525}
 
 \end{thebibliography}
 

@@ -5,4 +5,4 @@ v1: Baseline,EfficientNetV2-S,Standard KD,32x32,76.12,200,200,300.24
 v2: Standard KD,EfficientNetV2-S,Standard KD,32x32,76.19,187,200,305.7
 v3: DKD (β=8.0),EfficientNetV2-S,DKD (β=8.0),32x32,66.85,54,84,124.93
 v3.1: DKD (β=2.0),EfficientNetV2-S,DKD (β=2.0),32x32,75.63,184,200,295.33
-v4: Saturation Test,EfficientNetV2-S,Standard KD,64x64→32x32,77.93,180,200,336.52
+v4: Cross-Resolution,EfficientNetV2-S,Standard KD,64x64→32x32,77.93,180,200,336.52
