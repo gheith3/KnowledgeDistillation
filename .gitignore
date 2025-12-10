@@ -38,3 +38,6 @@ sections/*
 # Data folders
 data/
 datasets/
+
+# Removed experiments
+code_v3_224/

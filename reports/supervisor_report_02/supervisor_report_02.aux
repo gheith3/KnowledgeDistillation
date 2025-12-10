@@ -7,7 +7,6 @@
 \citation{deng2009imagenet}
 \citation{cubuk2019autoaugment}
 \citation{zhong2020random}
-\citation{zhang2018mixup}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Executive Summary}{2}{section.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Results at a Glance}{2}{subsection.1.1}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Summary of model compression results.}}{2}{table.1}\protected@file@percent }
@@ -15,13 +14,14 @@
 \@writefile{toc}{\contentsline {section}{\numberline {2}Methodology}{2}{section.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Experimental Setup}{2}{subsection.2.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Training Pipeline}{2}{subsection.2.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Data Augmentation:}{2}{subsection.2.2}\protected@file@percent }
+\citation{zhang2018mixup}
 \citation{yun2019cutmix}
 \citation{loshchilov2019decoupled}
 \citation{loshchilov2017sgdr}
 \citation{szegedy2016rethinking}
 \citation{hinton2015distilling}
 \citation{zhao2022decoupled}
+\@writefile{toc}{\contentsline {paragraph}{Data Augmentation:}{3}{subsection.2.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Optimization:}{3}{subsection.2.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Training Stability:}{3}{subsection.2.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Distillation Methods}{3}{subsection.2.3}\protected@file@percent }
@@ -29,38 +29,41 @@
 \@writefile{toc}{\contentsline {paragraph}{Decoupled KD}{4}{equation.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {3}Experimental Results}{4}{section.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Summary of All Experiments}{4}{subsection.3.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Comparison of all experimental configurations.}}{4}{table.2}\protected@file@percent }
-\newlabel{tab:experiments}{{2}{4}{Comparison of all experimental configurations}{table.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Comparison of all experimental configurations. Teacher accuracy: 76.65\% (32$\times $32) and 84.39\% (64$\times $64).}}{4}{table.2}\protected@file@percent }
+\newlabel{tab:experiments}{{2}{4}{Comparison of all experimental configurations. Teacher accuracy: 76.65\% (32$\times $32) and 84.39\% (64$\times $64)}{table.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Detailed Analysis of Phases}{4}{subsection.3.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {paragraph}{Phase 1: Robustness of Standard KD (v1 vs v2).}{4}{subsection.3.2}\protected@file@percent }
 \citation{zhao2022decoupled}
-\citation{mirzadeh2020improved}
 \@writefile{toc}{\contentsline {paragraph}{Phase 2: The Failure of DKD (v3 vs v3.1).}{5}{subsection.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Phase 3: The Saturation Test (v4).}{5}{subsection.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Analysis of Teacher Performance (Resolution Mismatch Constraint)}{5}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Phase 3: Cross-Resolution Distillation Test (v4).}{5}{subsection.3.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Analysis of Teacher Performance (Resolution Impact)}{5}{subsection.3.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {4}Key Scientific Findings}{5}{section.4}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Finding 1: The Regularization-Distillation Conflict}{5}{subsection.4.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Finding 2: Operational Robustness of Standard KD}{5}{subsection.4.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Finding 3: Student Capacity Ceiling}{5}{subsection.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Finding 3: Performance Gains Through Cross-Resolution Distillation}{6}{subsection.4.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {5}Proposed Thesis Structure}{6}{section.5}\protected@file@percent }
 \@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Proposed thesis chapter structure.}}{6}{table.3}\protected@file@percent }
 \newlabel{tab:structure}{{3}{6}{Proposed thesis chapter structure}{table.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Proposed Thesis Title}{6}{subsection.5.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {6}Visualizations}{6}{section.6}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Training Stability Comparison: Standard KD (v2) vs Decoupled KD (v3). The DKD curve ($\beta $=8.0) shows severe instability and early stopping at epoch 84, while Standard KD converges smoothly to 76.19\% accuracy.}}{6}{figure.1}\protected@file@percent }
-\newlabel{fig:loss_v2_v3}{{1}{6}{Training Stability Comparison: Standard KD (v2) vs Decoupled KD (v3). The DKD curve ($\beta $=8.0) shows severe instability and early stopping at epoch 84, while Standard KD converges smoothly to 76.19\% accuracy}{figure.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Capacity Saturation Phenomenon: Both v2 and v4 achieve identical 76.19\% accuracy despite v4 using a stronger teacher. The overlapping curves confirm that EfficientNetV2-S has reached its representational ceiling.}}{7}{figure.2}\protected@file@percent }
-\newlabel{fig:saturation}{{2}{7}{Capacity Saturation Phenomenon: Both v2 and v4 achieve identical 76.19\% accuracy despite v4 using a stronger teacher. The overlapping curves confirm that EfficientNetV2-S has reached its representational ceiling}{figure.2}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Effect of $\beta $ on DKD Performance. With $\beta $=8.0, DKD collapses to 66.85\% and triggers early stopping. Reducing $\beta $ to 2.0 recovers performance to 75.63\%, demonstrating the sensitivity of DKD to hyperparameter tuning.}}{8}{figure.3}\protected@file@percent }
-\newlabel{fig:dkd_beta}{{3}{8}{Effect of $\beta $ on DKD Performance. With $\beta $=8.0, DKD collapses to 66.85\% and triggers early stopping. Reducing $\beta $ to 2.0 recovers performance to 75.63\%, demonstrating the sensitivity of DKD to hyperparameter tuning}{figure.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Convergence Behavior Across All Experiments. Standard KD (v2) achieves the highest accuracy (76.19\%), while DKD with $\beta $=8.0 (v3) collapses to 66.85\% due to over-regularization.}}{8}{figure.4}\protected@file@percent }
-\newlabel{fig:accuracy_all}{{4}{8}{Convergence Behavior Across All Experiments. Standard KD (v2) achieves the highest accuracy (76.19\%), while DKD with $\beta $=8.0 (v3) collapses to 66.85\% due to over-regularization}{figure.4}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Teacher Accuracy Retention Across Methods. Standard KD (v2 and v4) achieves the highest retention rate (99.40\%), while DKD with $\beta $=8.0 collapses to 87.21\%.}}{9}{figure.5}\protected@file@percent }
-\newlabel{fig:retention}{{5}{9}{Teacher Accuracy Retention Across Methods. Standard KD (v2 and v4) achieves the highest retention rate (99.40\%), while DKD with $\beta $=8.0 collapses to 87.21\%}{figure.5}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Zoomed Convergence Plot (Final 50 Epochs): v2 and v4 curves overlap perfectly, providing visual proof of capacity saturation. The student model cannot improve beyond 76.19\% regardless of teacher quality.}}{9}{figure.6}\protected@file@percent }
-\newlabel{fig:zoomed_saturation}{{6}{9}{Zoomed Convergence Plot (Final 50 Epochs): v2 and v4 curves overlap perfectly, providing visual proof of capacity saturation. The student model cannot improve beyond 76.19\% regardless of teacher quality}{figure.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Training Stability: Standard KD (v2) vs DKD (v3). DKD ($\beta $=8.0) shows instability and early stopping.}}{6}{figure.1}\protected@file@percent }
+\newlabel{fig:loss_v2_v3}{{1}{6}{Training Stability: Standard KD (v2) vs DKD (v3). DKD ($\beta $=8.0) shows instability and early stopping}{figure.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Cross-Resolution Analysis: v4 (64$\times $64 Teacher) achieves 77.93\% vs v2 (32$\times $32 Teacher) at 76.19\%.}}{7}{figure.2}\protected@file@percent }
+\newlabel{fig:saturation}{{2}{7}{Cross-Resolution Analysis: v4 (64$\times $64 Teacher) achieves 77.93\% vs v2 (32$\times $32 Teacher) at 76.19\%}{figure.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Teacher Comparison: 64$\times $64 resolution improves accuracy from 76.65\% to 84.39\% (+7.74\%).}}{7}{figure.3}\protected@file@percent }
+\newlabel{fig:teacher_comparison}{{3}{7}{Teacher Comparison: 64$\times $64 resolution improves accuracy from 76.65\% to 84.39\% (+7.74\%)}{figure.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces DKD $\beta $ Effect: $\beta $=8.0 collapses to 66.85\%, $\beta $=2.0 recovers to 75.63\%.}}{7}{figure.4}\protected@file@percent }
+\newlabel{fig:dkd_beta}{{4}{7}{DKD $\beta $ Effect: $\beta $=8.0 collapses to 66.85\%, $\beta $=2.0 recovers to 75.63\%}{figure.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces All Experiments: v4 achieves highest accuracy (77.93\%), v3 collapses to 66.85\%.}}{8}{figure.5}\protected@file@percent }
+\newlabel{fig:accuracy_all}{{5}{8}{All Experiments: v4 achieves highest accuracy (77.93\%), v3 collapses to 66.85\%}{figure.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Teacher Retention: v4 achieves 92.35\% (vs 84.39\% Teacher), v2 achieves 99.40\% (vs 76.65\% Teacher).}}{8}{figure.6}\protected@file@percent }
+\newlabel{fig:retention}{{6}{8}{Teacher Retention: v4 achieves 92.35\% (vs 84.39\% Teacher), v2 achieves 99.40\% (vs 76.65\% Teacher)}{figure.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Zoomed Convergence (Final 50 Epochs): v4 (77.93\%) surpasses v2 (76.19\%) and v1 (76.12\%).}}{8}{figure.7}\protected@file@percent }
+\newlabel{fig:zoomed_saturation}{{7}{8}{Zoomed Convergence (Final 50 Epochs): v4 (77.93\%) surpasses v2 (76.19\%) and v1 (76.12\%)}{figure.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Cross-Resolution KD Mechanism: Input upscaled to 64$\times $64 for Teacher, Student uses 32$\times $32.}}{9}{figure.8}\protected@file@percent }
+\newlabel{fig:cross_resolution}{{8}{9}{Cross-Resolution KD Mechanism: Input upscaled to 64$\times $64 for Teacher, Student uses 32$\times $32}{figure.8}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {7}Next Steps}{10}{section.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {8}Critical Question Regarding Teacher Resolution}{10}{section.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {8}Summary and Conclusion}{10}{section.8}\protected@file@percent }
 \bibstyle{plainnat}
 \bibcite{cubuk2019autoaugment}{{1}{2019}{{Cubuk et al.}}{{}}}
 \bibcite{deng2009imagenet}{{2}{2009}{{Deng et al.}}{{}}}

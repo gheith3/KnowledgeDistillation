@@ -1,0 +1,8 @@
+ID,Type,Resolution,Method,AutoAug,Accuracy (%),Teacher Gap (%),Best Epoch,Epochs,Time (min),Early Stop,Retention (%)
+teacher,Teacher,32x32,-,N,76.65,-,199,200,389.7,N,-
+teacher_v4,Teacher,64x64,-,N,84.39,-,196,200,1048.9,N,-
+v1_baseline,Student,32x32,standard_kd,N,76.12,0.53,200,200,300.2,N,99.3
+v2_enhanced,Student,32x32,standard_kd,Y,76.19,0.46,187,200,305.7,N,99.4
+v3_dkd_beta8,Student,32x32,dkd,Y,66.85,9.80,54,84,124.9,Y,87.2
+v3_1_dkd_beta2,Student,32x32,dkd,Y,75.63,1.02,184,200,295.3,N,98.7
+v4_saturation,Student,64→32,standard_kd,Y,77.93,6.46,180,200,336.5,N,92.3

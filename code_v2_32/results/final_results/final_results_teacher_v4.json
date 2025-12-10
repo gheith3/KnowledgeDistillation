@@ -1,0 +1,19 @@
+{
+  "name": "teacher_v4",
+  "model_type": "teacher",
+  "model_name": "EfficientNetV2-L",
+  "timestamp": "2025-12-10T10:38:07.497604",
+  "results": {
+    "final_accuracy": 84.39,
+    "best_epoch": 196,
+    "total_epochs": 200,
+    "early_stopped": false,
+    "training_time_minutes": 1048.9
+  },
+  "history_summary": {
+    "final_train_loss": 2.127646,
+    "final_val_loss": 0.734948,
+    "best_val_accuracy": 84.39,
+    "epochs_recorded": 200
+  }
+}
